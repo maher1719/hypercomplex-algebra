@@ -1,0 +1,35 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: hypercomplex-algebra
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file and  the metadata from
+  "preferred-citation".
+type: software
+authors:
+  - given-names: Maher
+    family-names: Ben Abdessalem
+    email: ba.maher94@gmail.com
+    name-particle: Maher
+    orcid: 'https://orcid.org/0000-0001-5948-9718'
+repository-code: 'https://github.com/maher1719/hypercomplex-algebra'
+repository: 'https://github.com/maher1719/hypercomplex-engine'
+abstract: ' string-expression interface for multiplying elements of hypercomplex number systems — standard Cayley-Dickson algebras, split algebras, dual algebras, dual-split algebras, and tensor products of any combination of these.'
+keywords:
+  - hypercomplex
+  - Cayley-Dickson algebra
+  - Cayley-Dickson construction
+license: Apache-2.0
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Ben Abdessalem"
+      given-names: "Maher"
+  title: "An O(1) Bitwise Evaluator for Cayley--Dickson Sign Structure: Ordinary, Split, Dual, and Tensor Constructions"
+  year: 2026
+  month: 9
+  journal: "figshare"
+  doi: "10.6084/m9.figshare.33705022"
+  status: preprint

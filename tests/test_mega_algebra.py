@@ -23,7 +23,7 @@ import random
 
 import pytest
 
-from hypercomplex import FastStandard, build_table
+from hypercomplex_engine import FastStandard, build_table
 
 from hypercomplex_algebra import (
     ElementFormatter,

@@ -2,7 +2,7 @@
 
 This is the ONLY module that imports hypercomplex.
 """
-from hypercomplex import FastStandard
+from hypercomplex_engine import FastStandard
 
 from ..core.base.resolver import BasisProductResolver
 

@@ -1,5 +1,5 @@
 """Adapter: split basis products via hypercomplex-engine's O(1) engine."""
-from hypercomplex import FastSplit
+from hypercomplex_engine import FastSplit
 
 from ..core.base.resolver import BasisProductResolver
 

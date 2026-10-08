@@ -14,7 +14,7 @@ Run:
 
 import pytest
 
-from hypercomplex import build_table
+from hypercomplex_engine import build_table
 
 from hypercomplex_algebra import (
     ExpressionMultiplier,

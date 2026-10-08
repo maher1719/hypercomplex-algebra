@@ -49,3 +49,5 @@ try:
     assert False, "should have raised"
 except ValueError as e:
     print("correctly raised:", e)
+mult=multiply_expressions("e1+e10","e5+e14+e7+e12")
+print(mult) #equal 0

@@ -1,5 +1,5 @@
 """Adapter: dual basis products over a standard parent algebra."""
-from hypercomplex import FastStandard
+from hypercomplex_engine import FastStandard
 
 from ..core.dual.resolver import DualResolver as DualResolverBase
 

@@ -1,5 +1,5 @@
 """Adapter: dual basis products over a split parent algebra."""
-from hypercomplex import FastSplit
+from hypercomplex_engine import FastSplit
 
 from ..core.dual.resolver import DualResolver
 
