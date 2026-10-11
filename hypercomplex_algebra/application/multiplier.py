@@ -10,6 +10,12 @@ from ..expression import (
     DualElementParser, DualElementFormatter,
     TensorElementParser, TensorElementFormatter,
 )
+from .unary.conjugate.base import conjugate_base
+from .unary.conjugate.dual import conjugate_dual
+from .unary.norm.base import norm_base
+from .unary.norm.dual import norm_dual
+from .unary.inverse.base import inverse_base
+from .unary.inverse.dual import inverse_dual
 
 logger = logging.getLogger(__name__)
 
@@ -111,14 +117,69 @@ class ExpressionMultiplier:
             for key in parsed:
                 self._resolver.resolve(key, identity)
         else:
-            # Let the resolver's own ValueError (with its specific message —
-            # e.g. "Index out of range for split dim=3 (valid: 0..7)...")
-            # propagate as-is. It used to be caught here and replaced with a
-            # generic "unsupported format", which threw away the one piece
-            # of information the caller actually needed.
             if self._kind in DUAL_KINDS:
                 for idx, eps in parsed:
                     self._resolver.resolve(idx, eps, 0, 0)
             else:
                 for idx in parsed:
                     self._resolver.resolve(idx, 0)
+
+    # ==================================================================
+    # UNARY OPERATIONS (Conjugate, Norm, Inverse)
+    # ==================================================================
+
+    def conjugate(self, expr: str, mode: str = "hypercomplex") -> str:
+        """Returns the conjugate of the expression.
+
+        For standard/split algebras:
+            Negates all imaginary basis elements (index > 0).
+
+        For dual algebras, mode can be:
+            "hypercomplex" (default): Negates imaginary and mixed. Keeps pure eps.
+            "dual":                   Negates pure eps and mixed. Keeps imaginary.
+            "total":                  Negates imaginary and pure eps. Mixed stays positive.
+        """
+        terms = self._parser.parse(expr)
+        if self._kind in DUAL_KINDS:
+            result_terms = conjugate_dual(terms, mode=mode)
+        else:
+            result_terms = conjugate_base(terms)
+        return self._formatter.format(result_terms)
+
+    def norm(self, expr: str, mode: str = "hypercomplex") -> str:
+        """Returns the norm N(x) = x · x* as a formatted string.
+
+        For standard/split: returns a real scalar (e.g., "13").
+        For dual: returns a dual scalar (e.g., "13 + 6eps").
+
+        Args:
+            expr: The expression to compute the norm of.
+            mode: Conjugate mode for dual algebras.
+                  "hypercomplex" (default) or "total".
+                  "dual" is rejected (doesn't collapse to scalar).
+        """
+        terms = self._parser.parse(expr)
+        if self._kind in DUAL_KINDS:
+            result_terms = norm_dual(terms, self._multiplier, mode=mode)
+        else:
+            n = norm_base(terms, self._multiplier)
+            result_terms = {0: n}
+        return self._formatter.format(result_terms)
+
+    def inverse(self, expr: str, mode: str = "hypercomplex") -> str:
+        """Returns the inverse x⁻¹ = x* / N(x) as a formatted string.
+
+        The conjugate mode must match the norm's mode for x · x⁻¹ = 1.
+
+        Args:
+            expr: The expression to invert.
+            mode: Conjugate mode for dual algebras.
+                  "hypercomplex" (default) or "total".
+                  "dual" is rejected (doesn't collapse to scalar norm).
+        """
+        terms = self._parser.parse(expr)
+        if self._kind in DUAL_KINDS:
+            result_terms = inverse_dual(terms, self._multiplier, mode=mode)
+        else:
+            result_terms = inverse_base(terms, self._multiplier)
+        return self._formatter.format(result_terms)

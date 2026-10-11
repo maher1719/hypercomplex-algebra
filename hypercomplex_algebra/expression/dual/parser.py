@@ -1,6 +1,5 @@
 from ..tokenizer import tokenize
 
-
 class DualElementParser:
     """Parses expressions for dual/dual_split algebras. Recognizes eps tokens."""
 
@@ -21,7 +20,14 @@ class DualElementParser:
         if body == "eps":
             return 1.0, 0, 1
 
-        # Dual element: eps_e{n}
+        # Dual element with coefficient: {coeff}eps (means coeff * ε·e₀)
+        # MUST check this BEFORE the generic "e" check, because "eps" contains "e"
+        if body.endswith("eps") and "eps_e" not in body:
+            coeff_str = body[:-3]  # remove trailing "eps"
+            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
+            return magnitude, 0, 1
+
+        # Dual element: eps_e{n} or {coeff}eps_e{n}
         if "eps_e" in body:
             coeff_str, index_str = body.split("eps_e", 1)
             magnitude = 1.0 if coeff_str == "" else float(coeff_str)

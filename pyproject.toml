@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hypercomplex-algebra"
-version = "0.1.2.1"
+version = "0.2.0"
 description = "A high-performance, mathematically rigorous application layer for hypercomplex algebras (Standard, Split, Dual, Tensor)."
 readme = "README.md"
 license = "Apache-2.0"
@@ -31,9 +31,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Scientific/Engineering :: Physics",
 ]
-# If your wrapper relies on the engine being installed, add it here:
 dependencies = [
-    "hypercomplex-engine>=0.4.2.7", 
+    "hypercomplex-engine>=0.5.0", 
 ]
 
 [project.urls]
