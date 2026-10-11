@@ -20,6 +20,12 @@
 - [Quick Start](#quick-start)
 - [Supported Algebras](#supported-algebras)
 - [Tensor Products](#tensor-products)
+- [Unary Operations](#unary-operations)
+  - [Conjugate](#conjugate)
+  - [Norm](#norm)
+  - [Inverse](#inverse)
+- [Conjugate Types (Dual Algebras)](#conjugate-types-dual-algebras)
+- [Changelog](#changelog)
 - [Testing Philosophy](#testing-philosophy)
 - [Licensing & Philosophy](#licensing--philosophy)
 - [Author & References](#author--references)
@@ -225,6 +231,130 @@ e[1,3,2] · e[1,4,3]
 ```
 
 The `e[i,j,k]` notation uses **0-indexed slots** (consistent with Python conventions). The coefficient is always **outside** the bracket: `-3e[1,2,0]`.
+
+---
+
+
+## Unary Operations
+
+Beyond multiplication, the package provides **conjugate**, **norm**, and **inverse** operations
+for all supported algebras. These are accessed as methods on the `ExpressionMultiplier` instance:
+
+```python
+m = ExpressionMultiplier(kind="dual")
+m.conjugate("3 + 2e1 + eps")   # "3 - 2e1 + eps"
+m.norm("3 + 2e1 + eps")        # "13 + 6eps"
+m.inverse("3 + 2e1 + eps")     # inverse element as a string
+```
+
+### Conjugate
+
+Negates basis elements according to the algebra's conjugation rules.
+
+**Standard / Split algebras:**
+```python
+m = ExpressionMultiplier(kind="standard")
+m.conjugate("1 + 2e1 + 3e2")   # "1 - 2e1 - 3e2"
+```
+
+**Dual algebras** support three conjugate modes (see table below):
+```python
+m = ExpressionMultiplier(kind="dual")
+expr = "3 + 2e1 + eps + 4eps_e2"
+
+m.conjugate(expr)                          # default: "hypercomplex"
+m.conjugate(expr, mode="hypercomplex")     # "3 - 2e1 + eps - 4eps_e2"
+m.conjugate(expr, mode="dual")             # "3 + 2e1 - eps - 4eps_e2"
+m.conjugate(expr, mode="total")            # "3 - 2e1 - eps + 4eps_e2"
+```
+
+### Norm
+
+Computes $N(x) = x \cdot x^*$ using the **Hypercomplex Conjugate**.
+
+- **Standard / Split:** returns a real scalar string (e.g. `"14"`).
+- **Dual:** returns a **dual scalar** string (e.g. `"13 + 6eps"`), since the norm of a
+  dual number is itself a dual number.
+
+```python
+m = ExpressionMultiplier(kind="standard")
+m.norm("1 + 2e1 + 3e2")    # "14"  (= 1² + 2² + 3²)
+
+m = ExpressionMultiplier(kind="dual")
+m.norm("3 + 2e1 + eps")    # "13 + 6eps"
+```
+
+> **Note:** The `"dual"` conjugate mode is **rejected** for `norm()` and `inverse()` because it
+> does not collapse the product to a scalar. Only `"hypercomplex"` (default) and `"total"` are
+> valid modes for these operations.
+
+### Inverse
+
+Computes $x^{-1} = x^* / N(x)$. The conjugate mode must match the norm's mode so that
+$x \cdot x^{-1} = 1$ holds.
+
+For dual algebras, division by the dual scalar norm $(A + B\varepsilon)$ uses the formula:
+
+$$(A + B\varepsilon)^{-1} = A^{-1} - B A^{-2}\varepsilon \quad (A \neq 0)$$
+
+```python
+m = ExpressionMultiplier(kind="standard")
+m.inverse("1 + 2e1 + 3e2")
+# "0.071428571428571 - 0.142857142857143e1 - 0.214285714285714e2"
+
+m = ExpressionMultiplier(kind="dual")
+result = m.inverse("3 + 2e1 + eps")
+m.multiply("3 + 2e1 + eps", result)   # "1"
+```
+
+Raises `ZeroDivisionError` if the norm is zero (element is not invertible).
+
+---
+
+## Conjugate Types (Dual Algebras)
+
+Dual algebras admit **three distinct conjugations** in addition to the identity.
+The sign applied to each component is summarized below:
+
+| Number Type | Real ($a$) | Imaginary ($e_i,\ i>0$) | Pure Dual ($\varepsilon$) | Mixed ($\varepsilon e_i$) |
+|---|---|---|---|---|
+| **Original** ($W$) | + | + | + | + |
+| **Dual Conjugate** ($\overline{W}$) | + | + | − | − |
+| **Hypercomplex Conjugate** ($W^*$) | + | − | + | − |
+| **Total Conjugate** ($W^\dagger$) | + | − | − | + |
+
+**Key facts:**
+- $\varepsilon$ is **not** an imaginary unit; the Hypercomplex Conjugate leaves pure $\varepsilon$ positive.
+- The **Total Conjugate** negates both imaginary and pure-$\varepsilon$ parts; mixed terms stay positive
+  because $(-e_i)(-\varepsilon) = +\varepsilon e_i$.
+- Only the **Hypercomplex Conjugate** reliably collapses $x \cdot x^*$ to a pure dual scalar,
+  making it the correct choice for `norm()` and `inverse()`.
+
+---
+
+## Changelog
+
+### v0.5.0
+
+**Engine alignment (`hypercomplex-engine` ≥ 0.5.0):**
+- Removed the legacy dual 2-tuple `(sign, global_index)` "overflow" representation.
+- Dual elements now use the strict 3-tuple `(sign, local_index, eps_flag)` throughout,
+  reflecting the mathematical fact that $\varepsilon$ is a central nilpotent unit,
+  not an imaginary Cayley-Dickson dimension.
+
+**New unary operations** (`application/unary/`):
+- `conjugate(expr, mode)` — supports `"hypercomplex"`, `"dual"`, and `"total"` modes for duals.
+- `norm(expr, mode)` — computes $x \cdot x^*$; returns a dual scalar string for dual algebras.
+- `inverse(expr, mode)` — computes $x^* / N(x)$ using dual-scalar division.
+
+**Fixes:**
+- `DualElementParser`: fixed parsing of `{coeff}eps` tokens (e.g. `0.5eps`) that were
+  previously mis-parsed as basis elements.
+- `DualElementFormatter` / `ElementFormatter`: coefficients are now formatted in fixed-point
+  decimal notation; scientific notation (e.g. `2e-10`) is never emitted, preventing
+  parse round-trip failures.
+- Default pruning tolerance raised to `1e-9` to suppress floating-point residuals from
+  inverse calculations.
 
 ---
 
