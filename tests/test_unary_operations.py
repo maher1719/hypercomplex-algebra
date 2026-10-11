@@ -192,5 +192,102 @@ class TestEdgeCasesAndSplit:
         formatted = m._formatter.format(parsed)
         reparsed = m._parser.parse(formatted)
         assert abs(reparsed.get((0, 1), 0.0) - 1e-10) < 1e-15
+class TestEdgeCasesFromReview:
+    """Edge cases identified by external code review.
+    
+    These test the mathematical boundaries of the algebra:
+    nilpotent elements, zero divisors, non-invertible nonzero elements,
+    and floating-point precision policy.
+    """
+
+    # ------------------------------------------------------------------
+    # Nilpotent elements (ε² = 0)
+    # ------------------------------------------------------------------
+
+    def test_inverse_pure_epsilon_raises(self):
+        """Pure ε is nilpotent: ε² = 0, so norm(ε) = 0 and it has no inverse."""
+        m = ExpressionMultiplier(kind="dual")
+        with pytest.raises(ZeroDivisionError):
+            m.inverse("eps")
+
+    def test_inverse_pure_eps_e2_raises(self):
+        """Any pure dual element (ε·e_i) is nilpotent: (ε·e_i)² = ε²·e_i² = 0."""
+        m = ExpressionMultiplier(kind="dual")
+        with pytest.raises(ZeroDivisionError):
+            m.inverse("eps_e2")
+
+    # ------------------------------------------------------------------
+    # Split zero divisors
+    # ------------------------------------------------------------------
+
+    def test_norm_split_zero_divisor_is_zero(self):
+        """In split-complex (dim=1): (1+e1)(1-e1) = 1 - e1² = 1 - 1 = 0."""
+        m = ExpressionMultiplier(kind="split", dim=1)
+        assert m.norm("1 + e1") == "0"
+
+    def test_inverse_split_zero_divisor_raises(self):
+        """Split zero divisors have norm 0, so they cannot be inverted."""
+        m = ExpressionMultiplier(kind="split", dim=1)
+        with pytest.raises(ZeroDivisionError):
+            m.inverse("1 + e1")
+
+    def test_norm_split_nonzero_invertible(self):
+        """Not all split elements are zero divisors. (1 + 2e1) has norm 1-4 = -3."""
+        m = ExpressionMultiplier(kind="split", dim=1)
+        # (1+2e1)(1-2e1) = 1 - 4e1² = 1 - 4(1) = -3
+        assert m.norm("1 + 2e1") == "-3"
+
+
+    # ------------------------------------------------------------------
+    # Total conjugate mode edge cases
+    # ------------------------------------------------------------------
+
+    def test_norm_pure_dual_total_mode(self):
+        """norm(eps_e2, mode='total'): (ε·e2)(ε·e2) = ε²·e2² = 0 (nilpotent)."""
+        m = ExpressionMultiplier(kind="dual")
+        result = m.norm("eps_e2", mode="total")
+        assert result == "0"
+
+    def test_norm_total_mode_spatial_collapse_error(self):
+        """Total conjugate may produce spatial terms that don't collapse.
+        (1 + e1 + eps)(1 - e1 - eps) produces eps_e1 terms → ValueError."""
+        m = ExpressionMultiplier(kind="dual")
+        with pytest.raises(ValueError, match="did not collapse"):
+            m.norm("1 + e1 + eps", mode="total")
+
+    # ------------------------------------------------------------------
+    # Float precision policy
+    # ------------------------------------------------------------------
+
+    def test_inverse_one_third_float_precision(self):
+        """1/3 cannot be exactly represented in IEEE 754.
+        This documents our float precision policy: results are approximate,
+        and tests must use tolerance-based comparison."""
+        m = ExpressionMultiplier(kind="standard")
+        inv = m.inverse("3")
+        parsed = m._parser.parse(inv)
+        # 1/3 ≈ 0.3333333333333333 (not exact)
+        assert abs(parsed.get(0, 0.0) - 1.0 / 3.0) < 1e-12
+
+    def test_inverse_large_number(self):
+        """Large numbers should invert correctly."""
+        m = ExpressionMultiplier(kind="standard")
+        inv = m.inverse("1000000")
+        parsed = m._parser.parse(inv)
+        assert abs(parsed.get(0, 0.0) - 1e-6) < 1e-15
+
+    def test_dual_inverse_verify_identity(self):
+        """x · x⁻¹ = 1 for a dual element (approximate due to float)."""
+        m = ExpressionMultiplier(kind="dual")
+        expr = "3 + 2e1 + eps"
+        inv = m.inverse(expr)
+        result = m.multiply(expr, inv)
+        parsed = m._parser.parse(result)
+        # Scalar part should be ≈ 1
+        assert abs(parsed.get((0, 0), 0.0) - 1.0) < 1e-9
+        # All other parts should be ≈ 0
+        for key, val in parsed.items():
+            if key != (0, 0):
+                assert abs(val) < 1e-9, f"Residual at {key} = {val}"
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
