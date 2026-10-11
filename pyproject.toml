@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hypercomplex-algebra"
-version = "0.2.0.1"
+version = "0.2.0.2"
 description = "A high-performance, mathematically rigorous application layer for hypercomplex algebras (Standard, Split, Dual, Tensor)."
 readme = "README.md"
 license = "Apache-2.0"
