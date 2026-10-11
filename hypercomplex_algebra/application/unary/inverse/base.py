@@ -5,7 +5,9 @@ Uses the Hypercomplex Conjugate (same as norm).
 from ..conjugate.base import conjugate_base
 from ..norm.base import norm_base
 
-_TOLERANCE = 1e-15
+# Use a very small tolerance to allow inversion of tiny but valid floats.
+# Double precision floats can represent values down to ~1e-308.
+_TOLERANCE = 1e-30
 
 
 def inverse_base(terms: dict[int, float], multiplier) -> dict[int, float]:

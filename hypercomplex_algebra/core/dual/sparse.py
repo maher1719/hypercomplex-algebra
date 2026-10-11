@@ -9,7 +9,7 @@ class DualSparseMultiplier:
     Example: {(2, 0): 3.0, (1, 1): -2.5}  means  3·e₂ - 2.5·ε·e₁
     """
 
-    def __init__(self, resolver: DualResolver, tolerance: float = 1e-15):
+    def __init__(self, resolver: DualResolver, tolerance: float = 1e-12):
         self._resolver = resolver
         self._tolerance = tolerance
 

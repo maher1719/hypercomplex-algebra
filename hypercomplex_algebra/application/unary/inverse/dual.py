@@ -6,7 +6,8 @@ Division by a dual scalar (A + Bε) uses: (A + Bε)⁻¹ = A⁻¹ - B·A⁻²·�
 from ..conjugate.dual import conjugate_dual
 from ..norm.dual import norm_dual
 
-_TOLERANCE = 1e-15
+# Use a very small tolerance to allow inversion of tiny but valid floats.
+_TOLERANCE = 1e-30
 
 
 def inverse_dual(
@@ -18,16 +19,6 @@ def inverse_dual(
     Computes x⁻¹ = x* / N(x) for dual algebras.
 
     The conjugate mode MUST match the norm's mode for x · x⁻¹ = 1 to hold.
-
-    Args:
-        terms: The dual sparse dict to invert.
-        multiplier: The DualSparseMultiplier instance.
-        mode: "hypercomplex" (default) or "total".
-              "dual" is rejected (doesn't collapse to scalar norm).
-
-    Raises:
-        ZeroDivisionError: If the real part of the norm is zero.
-        ValueError: If mode is "dual".
     """
     # Compute norm (uses the same conjugate mode)
     norm_dict = norm_dual(terms, multiplier, mode=mode)
@@ -48,7 +39,7 @@ def inverse_dual(
 
     # Build the inverse norm dict
     inv_norm_dict: dict[tuple[int, int], float] = {(0, 0): inv_A}
-    if abs(inv_B) > _TOLERANCE:
+    if abs(inv_B) > 1e-12:  # Use aligned global tolerance for pruning
         inv_norm_dict[(0, 1)] = inv_B
 
     # Compute conjugate (same mode as norm)

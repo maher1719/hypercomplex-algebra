@@ -262,7 +262,17 @@ class TestProperties:
         self.mult = SparseMultiplier(StandardResolver())
         self.parser = ElementParser()
         self.formatter = ElementFormatter()
-
+    def _assert_expressions_approx_equal(self, m, expr1, expr2, tol=1e-9):
+        """Compare two expression strings by parsed coefficients, not raw strings."""
+        p1 = m._parser.parse(expr1)
+        p2 = m._parser.parse(expr2)
+        assert set(p1.keys()) == set(p2.keys()), (
+            f"Different basis keys:\n  {sorted(p1.keys())}\n  {sorted(p2.keys())}"
+        )
+        for key in p1:
+            assert abs(p1[key] - p2[key]) < tol, (
+                f"Coefficient mismatch at basis {key}: {p1[key]} vs {p2[key]}"
+            )
     def test_multiplicative_identity(self):
         for _ in range(100):
             a = _random_sparse(self.rng)
@@ -305,11 +315,14 @@ class TestProperties:
         m = ExpressionMultiplier(kind="standard")
         for _ in range(50):
             exprs = [self.formatter.format(_random_sparse(self.rng, max_index=3))
-                     for _ in range(4)]
+                    for _ in range(4)]
             mm = m.multiply_many(exprs)
             nested = m.multiply(m.multiply(m.multiply(exprs[0], exprs[1]),
-                                           exprs[2]), exprs[3])
-            assert mm == nested
+                                        exprs[2]), exprs[3])
+            # Approximate comparison: multiply_many keeps intermediates as dicts
+            # (full precision), while nested multiply round-trips through
+            # format→parse at each step, accumulating ~1e-15 noise per cycle.
+            self._assert_expressions_approx_equal(m, mm, nested)
 
 
 # ======================================================================

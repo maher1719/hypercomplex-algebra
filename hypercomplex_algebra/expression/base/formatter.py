@@ -3,7 +3,7 @@
 class ElementFormatter:
     """Formats standard/split sparse dicts into expression strings."""
 
-    def __init__(self, tolerance: float = 1e-15):
+    def __init__(self, tolerance: float = 1e-12):
         self._tolerance = tolerance
 
     def format(self, terms: dict[int, float]) -> str:

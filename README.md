@@ -309,6 +309,20 @@ m.multiply("3 + 2e1 + eps", result)   # "1"
 
 Raises `ZeroDivisionError` if the norm is zero (element is not invertible).
 
+### Numerical Precision Limitations
+
+The library uses a pruning tolerance of `1e-12` to suppress floating-point
+noise from inverse operations. As a consequence:
+
+- Elements whose **norm falls below `1e-12`** cannot be inverted and will
+  raise `ZeroDivisionError`, even if they are mathematically invertible.
+- For standard algebras, this means elements with magnitude below `~1e-6`
+  cannot be inverted.
+- This is a deliberate trade-off: preserving clean output for typical
+  use cases over supporting extremely small values.
+
+If you need to invert very small values, consider scaling them up first,
+inverting, then scaling back down.
 ---
 
 ## Conjugate Types (Dual Algebras)

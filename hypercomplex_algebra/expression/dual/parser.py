@@ -1,9 +1,10 @@
+import math
 from ..tokenizer import tokenize
 
 class DualElementParser:
     """Parses expressions for dual/dual_split algebras. Recognizes eps tokens."""
 
-    _PRUNE = 1e-15
+    _PRUNE = 1e-12  # Aligned tolerance
 
     def parse(self, s: str) -> dict[tuple[int, int], float]:
         terms: dict[tuple[int, int], float] = {}
@@ -21,16 +22,19 @@ class DualElementParser:
             return 1.0, 0, 1
 
         # Dual element with coefficient: {coeff}eps (means coeff * ε·e₀)
-        # MUST check this BEFORE the generic "e" check, because "eps" contains "e"
         if body.endswith("eps") and "eps_e" not in body:
-            coeff_str = body[:-3]  # remove trailing "eps"
+            coeff_str = body[:-3]
             magnitude = 1.0 if coeff_str == "" else float(coeff_str)
+            if not math.isfinite(magnitude):
+                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
             return magnitude, 0, 1
 
         # Dual element: eps_e{n} or {coeff}eps_e{n}
         if "eps_e" in body:
             coeff_str, index_str = body.split("eps_e", 1)
             magnitude = 1.0 if coeff_str == "" else float(coeff_str)
+            if not math.isfinite(magnitude):
+                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
             index = int(index_str)
             if index < 0:
                 raise ValueError(f"Basis index must be >= 0, got {index}")
@@ -47,10 +51,15 @@ class DualElementParser:
                     f"form like 0.001 for scientific-notation coefficients)."
                 )
             magnitude = 1.0 if coeff_str == "" else float(coeff_str)
+            if not math.isfinite(magnitude):
+                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
             index = int(index_str)
             if index < 0:
                 raise ValueError(f"Basis index must be >= 0, got {index}")
             return magnitude, index, 0
 
         # Pure scalar
-        return float(body), 0, 0
+        magnitude = float(body)
+        if not math.isfinite(magnitude):
+            raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+        return magnitude, 0, 0

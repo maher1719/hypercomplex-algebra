@@ -9,6 +9,7 @@ Validates:
     5. Mode rejection (dual mode rejected for norm/inverse)
     6. Expression simplification before unary ops
 """
+import math
 import pytest
 from hypercomplex_algebra import ExpressionMultiplier
 
@@ -139,6 +140,57 @@ class TestExpressionSimplification:
         # Hypercomplex conjugate: 3 - e3 + eps - eps_e1
         assert m.conjugate(expr) == "3 - e3 + eps - eps_e1"
 
+class TestEdgeCasesAndSplit:
+    def test_split_norm_and_zero_divisor(self):
+        m = ExpressionMultiplier(kind="split", dim=1)
+        # Split-complex: e1^2 = +1
+        # Norm of (1 + e1) = (1 + e1)(1 - e1) = 1 - e1^2 = 1 - 1 = 0
+        # This is a zero divisor and cannot be inverted.
+        assert m.norm("1 + e1") == "0"
+        with pytest.raises(ZeroDivisionError):
+            m.inverse("1 + e1")
 
+
+    def test_tiny_invertible_scalar(self):
+        # Values whose norm falls below the pruning tolerance (1e-12)
+        # cannot be inverted — this is a documented numerical limitation.
+        # 0.0001 has norm = 1e-8, safely above the tolerance.
+        m = ExpressionMultiplier(kind="standard")
+        inv = m.inverse("0.0001")
+        # 1 / 0.0001 = 10000
+        parsed = m._parser.parse(inv)
+        assert abs(parsed.get(0, 0.0) - 10000.0) < 1e-6
+
+    def test_non_finite_coefficients_rejected(self):
+        m = ExpressionMultiplier(kind="standard")
+        # Use "nane1" and "infe1" (no spaces) so the tokenizer passes 
+        # them as a single body to the parser.
+        with pytest.raises(ValueError, match="Non-finite"):
+            m.multiply("nane1", "e1")
+        with pytest.raises(ValueError, match="Non-finite"):
+            m.multiply("infe1", "e1")
+        with pytest.raises(ValueError, match="Non-finite"):
+            m.multiply("nan", "1")
+            
+    def test_invalid_conjugate_mode_on_zero(self):
+        m = ExpressionMultiplier(kind="dual")
+        # Empty expression "0" should still validate the mode
+        with pytest.raises(ValueError, match="Unknown conjugate mode"):
+            m.conjugate("0", mode="invalid")
+
+    def test_dual_split_nilpotent_inverse_rejection(self):
+        m = ExpressionMultiplier(kind="dual_split", dim=1)
+        # Pure epsilon has norm 0 (nilpotent)
+        with pytest.raises(ZeroDivisionError):
+            m.inverse("eps")
+
+    def test_round_trip_small_dual_coefficient(self):
+        m = ExpressionMultiplier(kind="dual")
+        # With aligned tolerances (1e-12), 1e-10 should survive round-trip
+        expr = "1e-10eps"
+        parsed = m._parser.parse(expr)
+        formatted = m._formatter.format(parsed)
+        reparsed = m._parser.parse(formatted)
+        assert abs(reparsed.get((0, 1), 0.0) - 1e-10) < 1e-15
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

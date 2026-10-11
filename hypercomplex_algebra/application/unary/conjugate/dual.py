@@ -24,6 +24,10 @@ def conjugate_dual(
         "dual":                   Negates pure eps and mixed. Keeps real and imaginary.
         "total":                  Negates imaginary and pure eps. Mixed stays positive.
     """
+    valid_modes = ("hypercomplex", "dual", "total")
+    if mode not in valid_modes:
+        raise ValueError(f"Unknown conjugate mode: {mode!r}. Use {valid_modes}.")
+        
     result = {}
     for (idx, eps), coeff in terms.items():
         if mode == "hypercomplex":

@@ -4,7 +4,7 @@
 class DualElementFormatter:
     """Formats dual sparse dicts, grouping base terms before dual terms (a + ε·b)."""
 
-    def __init__(self, tolerance: float = 1e-9):
+    def __init__(self, tolerance: float = 1e-12):
         self._tolerance = tolerance
 
     def format(self, terms: dict[tuple[int, int], float]) -> str:

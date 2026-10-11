@@ -9,7 +9,7 @@ class SparseMultiplier:
     k1 and k2 terms has at most k1*k2 terms before combining like indices.
     """
 
-    def __init__(self, resolver: BasisProductResolver, tolerance: float = 1e-15):
+    def __init__(self, resolver: BasisProductResolver, tolerance: float = 1e-12):
         self._resolver = resolver
         self._tolerance = tolerance
 
