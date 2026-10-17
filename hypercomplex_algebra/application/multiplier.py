@@ -139,6 +139,8 @@ class ExpressionMultiplier:
             "dual":                   Negates pure eps and mixed. Keeps imaginary.
             "total":                  Negates imaginary and pure eps. Mixed stays positive.
         """
+        if self._kind in TENSOR_KINDS:
+            raise NotImplementedError("Tensor conjugation is not implemented yet.")
         terms = self._parser.parse(expr)
         if self._kind in DUAL_KINDS:
             result_terms = conjugate_dual(terms, mode=mode)
@@ -158,6 +160,8 @@ class ExpressionMultiplier:
                   "hypercomplex" (default) or "total".
                   "dual" is rejected (doesn't collapse to scalar).
         """
+        if self._kind in TENSOR_KINDS:
+            raise NotImplementedError("Tensor norm is not implemented yet.")
         terms = self._parser.parse(expr)
         if self._kind in DUAL_KINDS:
             result_terms = norm_dual(terms, self._multiplier, mode=mode)
@@ -177,6 +181,8 @@ class ExpressionMultiplier:
                   "hypercomplex" (default) or "total".
                   "dual" is rejected (doesn't collapse to scalar norm).
         """
+        if self._kind in TENSOR_KINDS:
+            raise NotImplementedError("Tensor inverse is not implemented yet.")
         terms = self._parser.parse(expr)
         if self._kind in DUAL_KINDS:
             result_terms = inverse_dual(terms, self._multiplier, mode=mode)

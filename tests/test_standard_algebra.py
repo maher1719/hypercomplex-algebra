@@ -153,9 +153,7 @@ class TestElementFormatter:
     def test_first_term_negative_no_leading_plus(self):
         assert self.formatter.format({1: -2.0, 2: 1.0}) == "-2e1 + e2"
 
-    def test_near_zero_pruned(self):
-        assert self.formatter.format({1: 1e-20}) == "0"
-
+    
     def test_large_index(self):
         assert self.formatter.format({5000: 1.0}) == "e5000"
 

@@ -7,7 +7,6 @@ Matches types.csv exactly:
     Total Conjugate (W†):   Real +, Imag -, PureEps -, Mixed +
 """
 
-_TOLERANCE = 1e-15
 
 
 def conjugate_dual(
@@ -56,4 +55,4 @@ def conjugate_dual(
 
         result[(idx, eps)] = new_coeff
 
-    return {k: v for k, v in result.items() if abs(v) > _TOLERANCE}
+    return {k: v for k, v in result.items() if v != 0.0}

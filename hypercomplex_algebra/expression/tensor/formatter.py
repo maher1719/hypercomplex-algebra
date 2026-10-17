@@ -1,15 +1,17 @@
 """Format {(i, j, k, ...): coefficient} back into tensor expression strings."""
 
+from ...helpers.numerics import format_float
+
 
 class TensorElementFormatter:
     """Formats tensor sparse dicts into strings like '3e[1,2,0] - e[0,1,3]'."""
 
-    def __init__(self, tolerance: float = 1e-15):
+    def __init__(self, tolerance: float = 0.0):
         self._tolerance = tolerance
 
     def format(self, terms: dict[tuple, float]) -> str:
         items = sorted(
-            (key, c) for key, c in terms.items() if abs(c) > self._tolerance
+            (key, c) for key, c in terms.items() if c != 0.0
         )
         if not items:
             return "0"
@@ -26,8 +28,8 @@ class TensorElementFormatter:
     def _magnitude(self, key: tuple, mag: float) -> str:
         """Format |coefficient| * basis without sign."""
         if all(idx == 0 for idx in key):
-            return f"{mag:.10g}"  # identity / scalar
+            return format_float(mag)  # identity / scalar
         basis = "e[" + ",".join(str(i) for i in key) + "]"
-        if abs(mag - 1.0) < self._tolerance:
+        if mag == 1.0:
             return basis
-        return f"{mag:.10g}{basis}"
+        return f"{format_float(mag)}{basis}"

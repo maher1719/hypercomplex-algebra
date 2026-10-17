@@ -1,5 +1,6 @@
 """Parse tensor expression strings into {(i, j, k, ...): coefficient}."""
 from ..tokenizer import tokenize
+from ...helpers.numerics import add_finite, parse_finite_float
 
 
 class TensorElementParser:
@@ -8,8 +9,6 @@ class TensorElementParser:
     The parser must know the number of slots (num_slots) to parse scalars
     into the correct-length zero tuple and to validate index counts.
     """
-
-    _PRUNE = 1e-15
 
     def __init__(self, num_slots: int):
         if num_slots < 1:
@@ -24,8 +23,8 @@ class TensorElementParser:
         terms: dict[tuple, float] = {}
         for sign, body in tokenize(s):
             magnitude, key = self._parse_body(body)
-            terms[key] = terms.get(key, 0.0) + sign * magnitude
-        return {k: c for k, c in terms.items() if abs(c) > self._PRUNE}
+            add_finite(terms, key, sign * magnitude)
+        return terms
 
     def _parse_body(self, body: str) -> tuple[float, tuple]:
         """Returns (coefficient, key) where key is a tuple of indices."""
@@ -44,9 +43,9 @@ class TensorElementParser:
                 )
             if any(i < 0 for i in indices):
                 raise ValueError(f"Indices must be >= 0 in '{body}'")
-            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
+            magnitude = 1.0 if coeff_str == "" else parse_finite_float(coeff_str)
             return magnitude, indices
         else:
             # Pure scalar -> identity in all slots
-            magnitude = float(body)
+            magnitude = parse_finite_float(body)
             return magnitude, (0,) * self._num_slots

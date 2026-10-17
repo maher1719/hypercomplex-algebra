@@ -1,27 +1,37 @@
-"""Inverse for standard and split algebras: x⁻¹ = x* / N(x)
+"""Inverse for standard and split algebras: x⁻¹ = x* / N(x)."""
 
-Uses the Hypercomplex Conjugate (same as norm).
-"""
+import math
+
 from ..conjugate.base import conjugate_base
 from ..norm.base import norm_base
 
-# Use a very small tolerance to allow inversion of tiny but valid floats.
-# Double precision floats can represent values down to ~1e-308.
-_TOLERANCE = 1e-30
-
 
 def inverse_base(terms: dict[int, float], multiplier) -> dict[int, float]:
-    """
-    Computes x⁻¹ = x* / N(x) for standard/split algebras.
+    """Compute the inverse while scaling before evaluating the norm.
 
-    Raises ZeroDivisionError if the norm is zero (element is not invertible).
+    Scaling avoids squaring very large or very small input coefficients. A zero
+    norm (including split-algebra zero divisors) is not invertible.
     """
-    n = norm_base(terms, multiplier)
-    if abs(n) < _TOLERANCE:
+    if not terms:
+        raise ZeroDivisionError("Cannot invert zero.")
+
+    scale = max(abs(value) for value in terms.values())
+    if scale == 0.0:
+        raise ZeroDivisionError("Cannot invert zero.")
+
+    scaled = {idx: value / scale for idx, value in terms.items()}
+    norm = norm_base(scaled, multiplier)
+    if norm == 0.0:
         raise ZeroDivisionError(
-            "Cannot invert an element with a norm of zero. "
-            "Element may be a zero divisor or the zero element."
+            "Cannot invert an element with zero norm. "
+            "The element may be zero or a zero divisor."
         )
-
-    conj = conjugate_base(terms)
-    return {idx: coeff / n for idx, coeff in conj.items()}
+    conjugate = conjugate_base(scaled)
+    result = {}
+    for idx, coeff in conjugate.items():
+        value = (coeff / norm) / scale
+        if not math.isfinite(value):
+            raise OverflowError("Inverse coefficient is outside the finite float range.")
+        if value != 0.0:
+            result[idx] = value
+    return result

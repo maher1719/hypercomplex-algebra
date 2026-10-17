@@ -1,18 +1,16 @@
-import math
 from ..tokenizer import tokenize
+from ...helpers.numerics import add_finite, parse_finite_float
 
 class DualElementParser:
     """Parses expressions for dual/dual_split algebras. Recognizes eps tokens."""
-
-    _PRUNE = 1e-12  # Aligned tolerance
 
     def parse(self, s: str) -> dict[tuple[int, int], float]:
         terms: dict[tuple[int, int], float] = {}
         for sign, body in tokenize(s):
             coeff, index, eps = self._parse_body(body)
             key = (index, eps)
-            terms[key] = terms.get(key, 0.0) + sign * coeff
-        return {k: c for k, c in terms.items() if abs(c) > self._PRUNE}
+            add_finite(terms, key, sign * coeff)
+        return terms
 
     @staticmethod
     def _parse_body(body: str) -> tuple[float, int, int]:
@@ -24,17 +22,13 @@ class DualElementParser:
         # Dual element with coefficient: {coeff}eps (means coeff * ε·e₀)
         if body.endswith("eps") and "eps_e" not in body:
             coeff_str = body[:-3]
-            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
-            if not math.isfinite(magnitude):
-                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+            magnitude = 1.0 if coeff_str == "" else parse_finite_float(coeff_str)
             return magnitude, 0, 1
 
         # Dual element: eps_e{n} or {coeff}eps_e{n}
         if "eps_e" in body:
             coeff_str, index_str = body.split("eps_e", 1)
-            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
-            if not math.isfinite(magnitude):
-                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+            magnitude = 1.0 if coeff_str == "" else parse_finite_float(coeff_str)
             index = int(index_str)
             if index < 0:
                 raise ValueError(f"Basis index must be >= 0, got {index}")
@@ -50,16 +44,12 @@ class DualElementParser:
                     f"not signed ('e-1') or exponential ('1e-3' — use decimal "
                     f"form like 0.001 for scientific-notation coefficients)."
                 )
-            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
-            if not math.isfinite(magnitude):
-                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+            magnitude = 1.0 if coeff_str == "" else parse_finite_float(coeff_str)
             index = int(index_str)
             if index < 0:
                 raise ValueError(f"Basis index must be >= 0, got {index}")
             return magnitude, index, 0
 
         # Pure scalar
-        magnitude = float(body)
-        if not math.isfinite(magnitude):
-            raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+        magnitude = parse_finite_float(body)
         return magnitude, 0, 0

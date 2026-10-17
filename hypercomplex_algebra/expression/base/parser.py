@@ -1,17 +1,15 @@
-import math
 from ..tokenizer import tokenize
+from ...helpers.numerics import add_finite, parse_finite_float
 
 class ElementParser:
     """Parses expressions for standard and split algebras."""
-
-    _PRUNE = 1e-12  # Aligned tolerance
 
     def parse(self, s: str) -> dict[int, float]:
         terms: dict[int, float] = {}
         for sign, body in tokenize(s):
             coeff, index = self._parse_body(body)
-            terms[index] = terms.get(index, 0.0) + sign * coeff
-        return {k: c for k, c in terms.items() if abs(c) > self._PRUNE}
+            add_finite(terms, index, sign * coeff)
+        return terms
 
     @staticmethod
     def _parse_body(body: str) -> tuple[float, int]:
@@ -25,9 +23,7 @@ class ElementParser:
                     f"not signed ('e-1') or exponential ('1e-3' — use decimal "
                     f"form like 0.001 for scientific-notation coefficients)."
                 )
-            magnitude = 1.0 if coeff_str == "" else float(coeff_str)
-            if not math.isfinite(magnitude):
-                raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+            magnitude = 1.0 if coeff_str == "" else parse_finite_float(coeff_str)
                 
             index = int(index_str)
             if index < 0:
@@ -35,7 +31,5 @@ class ElementParser:
             return magnitude, index
 
         # Pure scalar
-        magnitude = float(body)
-        if not math.isfinite(magnitude):
-            raise ValueError(f"Non-finite coefficient {magnitude} is not allowed.")
+        magnitude = parse_finite_float(body)
         return magnitude, 0

@@ -138,9 +138,7 @@ class TestFormatterAttack:
     def test_empty_is_zero(self):
         assert self.formatter.format({}) == "0"
 
-    def test_all_near_zero_pruned(self):
-        assert self.formatter.format({1: 1e-20, 2: -1e-20}) == "0"
-
+    
     def test_negative_zero_pruned(self):
         assert self.formatter.format({0: -0.0}) == "0"
 
@@ -201,9 +199,7 @@ class TestSparseAttack:
         assert self.mult.multiply({1: 1.0}, {}) == {}
         assert self.mult.multiply({}, {}) == {}
 
-    def test_near_zero_skipped(self):
-        assert self.mult.multiply({1: 1e-20}, {2: 1.0}) == {}
-
+    
     def test_single_element_product_property(self):
         # e_i * e_j ALWAYS yields exactly one basis element.
         for i in range(32):

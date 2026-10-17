@@ -238,7 +238,7 @@ The `e[i,j,k]` notation uses **0-indexed slots** (consistent with Python convent
 ## Unary Operations
 
 Beyond multiplication, the package provides **conjugate**, **norm**, and **inverse** operations
-for all supported algebras. These are accessed as methods on the `ExpressionMultiplier` instance:
+for standard, split, dual, and dual-split algebras. Tensor unary operations are not implemented yet. These are accessed as methods on the `ExpressionMultiplier` instance:
 
 ```python
 m = ExpressionMultiplier(kind="dual")
@@ -311,18 +311,23 @@ Raises `ZeroDivisionError` if the norm is zero (element is not invertible).
 
 ### Numerical Precision Limitations
 
-The library uses a pruning tolerance of `1e-12` to suppress floating-point
-noise from inverse operations. As a consequence:
+The expression parser and sparse arithmetic preserve finite, nonzero coefficients
+by default rather than dropping values below a fixed absolute tolerance. This is
+important because a small coefficient can be mathematically significant, for
+example as the inverse of a large scalar. Formatting uses a shortest
+round-trip representation and may use uppercase scientific notation (`E`) to
+avoid ambiguity with the lowercase `eN` basis-index syntax.
 
-- Elements whose **norm falls below `1e-12`** cannot be inverted and will
-  raise `ZeroDivisionError`, even if they are mathematically invertible.
-- For standard algebras, this means elements with magnitude below `~1e-6`
-  cannot be inverted.
-- This is a deliberate trade-off: preserving clean output for typical
-  use cases over supporting extremely small values.
+Calculations still use Python binary floating-point (`float`), so precision and
+range remain finite. Inputs containing NaN or infinity are rejected, and
+arithmetic that overflows to a non-finite value raises an explicit exception.
+An element with zero norm (including a nonzero split-algebra zero divisor) is
+not invertible; a negative nonzero split norm is valid.
 
-If you need to invert very small values, consider scaling them up first,
-inverting, then scaling back down.
+Tensor multiplication is supported, but tensor conjugation, norm, and inverse
+explicitly raise `NotImplementedError` until their algebraic semantics are
+implemented and tested.
+
 ---
 
 ## Conjugate Types (Dual Algebras)

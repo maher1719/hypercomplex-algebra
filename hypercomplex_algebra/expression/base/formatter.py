@@ -1,9 +1,11 @@
 """Format {index: coefficient} back into an expression string."""
 
+from ...helpers.numerics import format_float
+
 class ElementFormatter:
     """Formats standard/split sparse dicts into expression strings."""
 
-    def __init__(self, tolerance: float = 1e-12):
+    def __init__(self, tolerance: float = 0.0):
         self._tolerance = tolerance
 
     def format(self, terms: dict[int, float]) -> str:
@@ -26,14 +28,10 @@ class ElementFormatter:
         if index == 0:
             return self._format_coeff(mag)
         basis = f"e{index}"
-        if abs(mag - 1.0) < self._tolerance:
+        if mag == 1.0:
             return basis
         return f"{self._format_coeff(mag)}{basis}"
 
     @staticmethod
     def _format_coeff(mag: float) -> str:
-        """Format a coefficient without scientific notation."""
-        if mag == int(mag) and abs(mag) < 1e15:
-            return str(int(mag))
-        # Use fixed-point notation with 15 decimal places, strip trailing zeros
-        return f"{mag:.15f}".rstrip('0').rstrip('.')
+        return format_float(mag)

@@ -1,20 +1,22 @@
 """Format {(index, eps_flag): coefficient} back into a dual expression string."""
 
+from ...helpers.numerics import format_float
+
 
 class DualElementFormatter:
     """Formats dual sparse dicts, grouping base terms before dual terms (a + ε·b)."""
 
-    def __init__(self, tolerance: float = 1e-12):
+    def __init__(self, tolerance: float = 0.0):
         self._tolerance = tolerance
 
     def format(self, terms: dict[tuple[int, int], float]) -> str:
         base_terms = [
             (idx, c) for (idx, eps), c in terms.items()
-            if eps == 0 and abs(c) > self._tolerance
+            if eps == 0 and c != 0.0
         ]
         dual_terms = [
             (idx, c) for (idx, eps), c in terms.items()
-            if eps == 1 and abs(c) > self._tolerance
+            if eps == 1 and c != 0.0
         ]
         base_terms.sort(key=lambda item: item[0])
         dual_terms.sort(key=lambda item: item[0])
@@ -43,13 +45,10 @@ class DualElementFormatter:
                 basis = "eps"
             else:
                 basis = f"eps_e{index}"
-        if abs(mag - 1.0) < self._tolerance:
+        if mag == 1.0:
             return basis
         return f"{self._format_coeff(mag)}{basis}"
 
     @staticmethod
     def _format_coeff(mag: float) -> str:
-        """Format a coefficient without scientific notation."""
-        if mag == int(mag) and abs(mag) < 1e15:
-            return str(int(mag))
-        return f"{mag:.15f}".rstrip('0').rstrip('.')
+        return format_float(mag)
